@@ -109,7 +109,8 @@ async def propose_manage(i: int):
     reply_params = t.ReplyParameters(proposed.msg_id, allow_sending_without_reply=True)
     await bot.send_message(
         MANAGER_CHAT_ID,
-        f"{proposed.user.full_name} ({mention(proposed.user)}) предлагает видео: <strong>{proposed.phrase}</strong>",
+        f'{proposed.user.full_name} ({mention(proposed.user)}) предлагает видео: '
+        f'<tg-spoiler><strong>{proposed.phrase}</strong></tg-spoiler>',
         reply_markup=quick_markup(buttons, row_width=3), reply_parameters=reply_params
     )
 
