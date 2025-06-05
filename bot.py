@@ -165,7 +165,8 @@ async def accept_proposed(i: int, text: str):
     await end_proposed_prompt()
     proposed = PROPOSED[i]
     PROPOSED[i] = None
-    if dt > datetime.now():
+    delayed = dt > datetime.now()
+    if delayed:
         await bot.send_message(
             MANAGER_CHAT_ID,
             "К сожалению, бот не может автоматически настроить отложенное сообщение. "
@@ -180,6 +181,11 @@ async def accept_proposed(i: int, text: str):
         update_phrases()
     await bot.copy_message(send_to, MANAGER_CHAT_ID, proposed.msg_id)
     await bot.send_message(send_to, f"||{proposed.phrase}||", parse_mode="MarkdownV2")
+    if not delayed:
+        await bot.send_message(
+            MANAGER_CHAT_ID,
+            "Предложение принято и опубликовано в канале!"
+        )
 
 async def edit_proposed(i: int, text: str):
     await end_proposed_prompt()
