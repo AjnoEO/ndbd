@@ -256,7 +256,7 @@ async def wrong_translation_sent(message: t.Message):
     await bot.send_message(message.chat.id, "Сообщение содержит запрещённые символы. Пожалуйста, используйте кириллицу")
 
 ALL_CONTENT_TYPES = ['text', 'audio', 'photo', 'voice', 'video', 'document', 'location', 'contact', 'sticker', 'video_note']
-@bot.message_handler(content_types=ALL_CONTENT_TYPES) #, chat_types="private")
+@bot.message_handler(content_types=ALL_CONTENT_TYPES, chat_types="private")
 async def handle_other_types(message: t.Message):
     raise UserError("Этот тип сообщения не поддерживается. Пожалуйста, используйте команду или пришлите видео")
 
