@@ -1,5 +1,5 @@
-# НКРЯ - Частотность - Скачать "сырой" CSV-файл
-phrases/ruscorpora_content_*.csv
+# База словосочетаний для предложений
+phrases/phrases.csv
 
 # Конфиденциальная информация
 config.ini
