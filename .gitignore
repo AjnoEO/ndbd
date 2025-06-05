@@ -1,0 +1,8 @@
+# НКРЯ - Частотность - Скачать "сырой" CSV-файл
+phrases/ruscorpora_content_*.csv
+
+# Конфиденциальная информация
+config.ini
+
+# Кэш
+__pycache__
