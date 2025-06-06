@@ -153,15 +153,21 @@ async def end_proposed_prompt():
 
 async def accept_proposed(i: int, text: str):
     dt = None
+    now = datetime.now()
+    one_day = timedelta(days=1)
     text = text.strip().lower()
-    if text == "сейчас": dt = datetime.now()
-    elif text == "позже": dt = datetime.now() + timedelta(days=1)
+    if text == "сейчас": dt = now
+    elif text == "позже": dt = now + one_day
     for fmt in ("%d.%m.%Y %H:%M", "%d.%m %H:%M"):
         try: dt = datetime.strptime(text, fmt)
         except ValueError: pass
     if dt is None:
         msg = "Введите слово <code>Сейчас</code> или <code>Позже</code> или дату в формате <code>DD.MM(.YYYY) HH:MM</code>"
         raise UserError(msg)
+    if dt.year < now.year:
+        dt = dt.replace(year=now.year)
+    if dt < now - one_day:
+        dt = dt.replace(year=dt.year+1)
     await end_proposed_prompt()
     proposed = PROPOSED[i]
     PROPOSED[i] = None
