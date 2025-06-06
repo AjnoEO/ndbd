@@ -12,6 +12,7 @@ result = pd.DataFrame(columns=cols)
 RESULT_FILE = os.path.join("phrases", "phrases.csv")
 if os.path.exists(RESULT_FILE):
     result = pd.read_csv(RESULT_FILE)
+    result = result[cols]
 
 for csv_file in csv_files:
     df = pd.read_csv(os.path.join(FOLDER, csv_file), sep=";")

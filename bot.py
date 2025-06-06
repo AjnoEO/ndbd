@@ -16,7 +16,7 @@ PHRASES_PATH = os.path.join("phrases", "phrases.csv")
 PHRASES = pd.read_csv(PHRASES_PATH, dtype={"used": np.bool_})
 
 def update_phrases():
-    PHRASES.to_csv(PHRASES_PATH)
+    PHRASES.to_csv(PHRASES_PATH, index=False)
 
 LAST_INSPIRATION: dict[int, tuple[int, str, str, str]] = {} # df_idx, phrase, word_lex_0, word_lex_1
 SENT_VIDEOS: dict[int, tuple[int, int]] = {} # chat_id, message_id
