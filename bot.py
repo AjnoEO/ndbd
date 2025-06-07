@@ -213,7 +213,7 @@ async def decline_proposed(i: int, text: str):
     await end_proposed_prompt()
     proposed = PROPOSED[i]
     PROPOSED[i] = None
-    response = f"Ваше предложение было отклонено:\n<em>{text}</em>"
+    response = f"Ваше предложение было отклонено:\n<em>{text}</em>\nВы можете отправить новое видео с учётом комментария!"
     reply_params = t.ReplyParameters(proposed.orig_msg_id, allow_sending_without_reply=True)
     await bot.send_message(proposed.user.id, response, reply_parameters=reply_params)
     await bot.send_message(MANAGER_CHAT_ID, "Предложение успешно отклонено")
