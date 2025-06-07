@@ -71,13 +71,23 @@ async def help(message: t.Message):
     if message.text == "/start":
         response += "Добро пожаловать!\n"
     response += (
-        f"Чтобы предложить видео с дактилем, просто пришлите видео, а затем напишите, что вы продактилировали. "
-        f"Предпочитаемый формат — видеосообщения (кружочки). Пожалуйста, не посылайте видео без звука, его нельзя замедлить!\n"
+        f"Чтобы предложить видео с дактилем, просто пришлите видео, а затем напишите, что вы продактилировали\n"
+        f"Ознакомьтесь с советами по записи видео: /tips\n"
         f"Если у вас нет идей, что продактилировать, воспользуйтесь командой /inspiration — она предложит вам словосочетание\n"
         f"По всем вопросам пишите {OWNER_HANDLE}"
     )
     if message.from_user.id == OWNER_ID:
         response += f"\n<code>chat_id={message.chat.id}</code>"
+    await bot.send_message(message.chat.id, response)
+
+@bot.message_handler(commands=["tips"], chat_types=["private", "group", "supergroup"])
+async def help(message: t.Message):
+    response = (
+        '<strong>Советы:</strong>\n'
+        '- Ознакомьтесь с <a href="https://vk.com/video-211239992_456239018">видео</a> о том, как дактилировать\n'
+        '- Записывайте видео так, чтобы ваши лицо и рука были хорошо освещены\n'
+        '- Не удаляйте звук с видео. Предпочитаемый формат ― видеосообщения (кружочки)\n'
+    )
     await bot.send_message(message.chat.id, response)
 
 @bot.message_handler(commands=["inspiration"], chat_types="private")
