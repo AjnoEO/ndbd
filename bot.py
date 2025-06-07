@@ -126,11 +126,11 @@ async def propose_manage(i: int):
 
 PROPOSED_ACTIONS_TO_PROMPTS = {
     "accept": (
-        "Вы <strong>принимаете</strong> предложение. Введите дату и время публикации в формате "
+        "{user} <strong>принимает</strong> предложение. Введите дату и время публикации в формате "
         "<code>DD.MM(.YYYY) HH:MM</code>, или напишите <code>Сейчас</code> или <code>Позже</code>"
         ),
-    "edit": "Вы <strong>редактируете</strong> предложение. Введите исправленный вариант",
-    "decline": "Вы <strong>отклоняете</strong> предложение. Укажите причину отказа"
+    "edit": "{user} <strong>редактирует</strong> предложение. Введите исправленный вариант",
+    "decline": "{user} <strong>отклоняет</strong> предложение. Укажите причину отказа"
 }
 
 @bot.callback_query_handler(lambda query: query.data.startswith("proposed_"))
@@ -149,7 +149,7 @@ async def handle_proposed(callback_query: t.CallbackQuery):
     buttons = {"Отмена": {"callback_data": f"proposed_{i}_cancel"}}
     prompt_msg = await bot.send_message(
         message.chat.id,
-        PROPOSED_ACTIONS_TO_PROMPTS[action],
+        PROPOSED_ACTIONS_TO_PROMPTS[action].format(user=callback_query.from_user.first_name),
         reply_markup=quick_markup(buttons)
     )
     CURRENT_PROPOSED["idx"] = i
