@@ -9,7 +9,7 @@ import telebot.types as t
 from telebot.formatting import escape_html
 from telebot.util import quick_markup
 from classes import Proposed
-from data import CHANNEL_ID, MANAGER_CHAT_ID, OWNER_ID, OWNER_HANDLE, TOKEN
+from data import CHANNEL_ID, MANAGER_CHAT_ID, OWNER_ID, OWNER_HANDLE, TOKEN, PROPOSED, update_proposed
 from utils import UserError
 
 PHRASES_PATH = os.path.join("phrases", "phrases.csv")
@@ -20,7 +20,6 @@ def update_phrases():
 
 LAST_INSPIRATION: dict[int, tuple[int, str, str, str]] = {} # df_idx, phrase, word_lex_0, word_lex_1
 SENT_VIDEOS: dict[int, tuple[int, int]] = {} # chat_id, message_id
-PROPOSED: list[Proposed] = []
 CURRENT_PROPOSED: dict[str, int | str] = {} # idx, action, prompt_msg_id
 
 class MyExceptionHandler(telebot.ExceptionHandler):
@@ -181,6 +180,7 @@ async def accept_proposed(i: int, text: str):
     await end_proposed_prompt()
     proposed = PROPOSED[i]
     PROPOSED[i] = None
+    update_proposed()
     delayed = dt > datetime.now()
     if delayed:
         await bot.send_message(
@@ -207,12 +207,14 @@ async def edit_proposed(i: int, text: str):
     await end_proposed_prompt()
     PROPOSED[i].phrase = text
     PROPOSED[i].idx = None
+    update_proposed()
     await propose_manage(i)
 
 async def decline_proposed(i: int, text: str):
     await end_proposed_prompt()
     proposed = PROPOSED[i]
     PROPOSED[i] = None
+    update_proposed()
     response = f"Ваше предложение было отклонено:\n<em>{text}</em>\nВы можете отправить новое видео с учётом комментария!"
     reply_params = t.ReplyParameters(proposed.orig_msg_id, allow_sending_without_reply=True)
     await bot.send_message(proposed.user.id, response, reply_parameters=reply_params)
@@ -250,6 +252,7 @@ async def propose(phrase: str, user: t.User):
     video_message = await bot.copy_message(MANAGER_CHAT_ID, chat_id, message_id)
     i = len(PROPOSED)
     PROPOSED.append(Proposed(user, phrase, video_message.message_id, message_id, idx))
+    update_proposed()
     await propose_manage(i)
     await bot.send_message(chat_id, f"Ваше предложение отправлено на проверку. Спасибо!")
 

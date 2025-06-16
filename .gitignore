@@ -4,5 +4,8 @@ phrases/phrases.csv
 # Конфиденциальная информация
 config.ini
 
+# Данные
+proposed_list.json
+
 # Кэш
 __pycache__
