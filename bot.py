@@ -20,7 +20,7 @@ def update_phrases():
 
 LAST_INSPIRATION: dict[int, tuple[int, str, str, str]] = {} # df_idx, phrase, word_lex_0, word_lex_1
 SENT_VIDEOS: dict[int, tuple[int, int]] = {} # chat_id, message_id
-CURRENT_PROPOSED: dict[str, int | str] = {} # idx, action, prompt_msg_id
+CURRENT_PROPOSED: dict[str, int | str] = {} # phrase_idx, action, prompt_msg_id
 
 class MyExceptionHandler(telebot.ExceptionHandler):
     async def handle(self, exc: Exception):
@@ -99,7 +99,7 @@ async def inspiration(message: t.Message):
     result = options.sample(1).iloc[0]
     phrase = result['word_form_0'] + " " + result['word_form_1']
     phrase = phrase[0].upper() + phrase[1:]
-    LAST_INSPIRATION[message.from_user.id] = (result.name, phrase, result["word_lex_0"], result["word_lex_1"])
+    LAST_INSPIRATION[message.from_user.id] = (int(result.name), phrase, result["word_lex_0"], result["word_lex_1"])
     response = (
         f"Продактилируйте: <strong>{phrase}</strong>\n"
         f"Если хотите получить другое предложение, используйте /inspiration ещё раз."
@@ -149,9 +149,10 @@ async def handle_proposed(callback_query: t.CallbackQuery):
     prompt_msg = await bot.send_message(
         message.chat.id,
         PROPOSED_ACTIONS_TO_PROMPTS[action].format(user=callback_query.from_user.first_name),
+        reply_parameters=t.ReplyParameters(message.id),
         reply_markup=quick_markup(buttons)
     )
-    CURRENT_PROPOSED["idx"] = i
+    CURRENT_PROPOSED["phrase_idx"] = i
     CURRENT_PROPOSED["action"] = action
     CURRENT_PROPOSED["prompt_msg_id"] = prompt_msg.id
 
@@ -192,8 +193,8 @@ async def accept_proposed(i: int, text: str):
         send_to = MANAGER_CHAT_ID
     else:
         send_to = CHANNEL_ID
-    if proposed.idx is not None:
-        PHRASES.loc[proposed.idx, "used"] = True
+    if proposed.phrase_idx is not None:
+        PHRASES.loc[proposed.phrase_idx, "used"] = True
         update_phrases()
     await bot.copy_message(send_to, MANAGER_CHAT_ID, proposed.msg_id)
     await bot.send_message(send_to, f"||{proposed.phrase}||", parse_mode="MarkdownV2")
@@ -206,7 +207,7 @@ async def accept_proposed(i: int, text: str):
 async def edit_proposed(i: int, text: str):
     await end_proposed_prompt()
     PROPOSED[i].phrase = text
-    PROPOSED[i].idx = None
+    PROPOSED[i].phrase_idx = None
     update_proposed()
     await propose_manage(i)
 
@@ -224,7 +225,7 @@ async def decline_proposed(i: int, text: str):
     func=lambda message: message.chat.id == MANAGER_CHAT_ID and CURRENT_PROPOSED
 )
 async def handle_current_proposed(message: t.Message):
-    i, action = CURRENT_PROPOSED["idx"], CURRENT_PROPOSED["action"]
+    i, action = CURRENT_PROPOSED["phrase_idx"], CURRENT_PROPOSED["action"]
     match action:
         case "accept": await accept_proposed(i, message.text)
         case "edit": await edit_proposed(i, message.text)
@@ -244,14 +245,14 @@ async def video_sent(message: t.Message):
 
 async def propose(phrase: str, user: t.User):
     chat_id, message_id = SENT_VIDEOS.pop(user.id)
-    idx = None
+    phrase_idx = None
     last = LAST_INSPIRATION.get(user.id)
     if last:
-        idx = last[0]
+        phrase_idx = last[0]
         del LAST_INSPIRATION[user.id]
     video_message = await bot.copy_message(MANAGER_CHAT_ID, chat_id, message_id)
     i = len(PROPOSED)
-    PROPOSED.append(Proposed(user, phrase, video_message.message_id, message_id, idx))
+    PROPOSED.append(Proposed(user, phrase, video_message.message_id, message_id, phrase_idx))
     update_proposed()
     await propose_manage(i)
     await bot.send_message(chat_id, f"Ваше предложение отправлено на проверку. Спасибо!")

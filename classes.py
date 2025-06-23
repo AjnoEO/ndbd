@@ -2,22 +2,22 @@ from json import JSONEncoder
 import telebot.types as t
 
 class Proposed:
-    def __init__(self, user: t.User, phrase: str, msg_id: int, orig_msg_id: int, idx: int | None = None):
+    def __init__(self, user: t.User, phrase: str, msg_id: int, orig_msg_id: int, phrase_idx: int | None = None):
         if isinstance(user, str): user = t.User.de_json(user)
         self.user = user
         self.phrase = phrase
         self.msg_id = msg_id
         self.orig_msg_id = orig_msg_id
-        self.idx = idx
+        self.phrase_idx = phrase_idx
     
     def to_json(self):
         return {
             "__class__": "Proposed",
-            "user": self.user.to_dict(),
+            "user": self.user.to_dict() | {"__class__": "User"},
             "phrase": self.phrase,
             "msg_id": self.msg_id,
             "orig_msg_id": self.orig_msg_id,
-            "idx": self.idx
+            "phrase_idx": self.phrase_idx
         }
 
 class ProposedJSONENcoder(JSONEncoder):
@@ -31,5 +31,7 @@ def proposed_hook(obj: dict[str]):
         cl = obj.pop("__class__")
         if cl == "Proposed":
             return Proposed(**obj)
+        if cl == "User":
+            return t.User(**obj)
         raise ValueError(f"Неизвестный класс: {cl}")
     return obj
