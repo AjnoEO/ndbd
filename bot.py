@@ -197,7 +197,7 @@ async def accept_proposed(i: int, text: str):
         PHRASES.loc[proposed.phrase_idx, "used"] = True
         update_phrases()
     await bot.copy_message(send_to, MANAGER_CHAT_ID, proposed.msg_id)
-    await bot.send_message(send_to, f"||{proposed.phrase}||", parse_mode="MarkdownV2")
+    await bot.send_message(send_to, f"<tg-spoiler>{proposed.phrase}</tg-spoiler>")
     if not delayed:
         await bot.send_message(
             MANAGER_CHAT_ID,
