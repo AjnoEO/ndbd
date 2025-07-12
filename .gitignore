@@ -5,7 +5,10 @@ phrases/phrases.csv
 config.ini
 
 # Данные
+metadata.json
 proposed_list.json
+user_data.json
 
-# Кэш
+# Временные файлы
+test.py
 __pycache__
