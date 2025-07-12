@@ -424,7 +424,7 @@ def schedules():
     if DEBUG:
         schedule.every().minute.do(job)
     else:
-        schedule.every().day.at("9:00", MSK).do(job)
+        schedule.every().day.at("09:00", MSK).do(job)
         schedule.every().day.at("17:00", MSK).do(job)
     while True:
         schedule.run_pending()
