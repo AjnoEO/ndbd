@@ -436,6 +436,7 @@ def propose(phrase: str, user: t.User):
     if last:
         phrase_idx = last[0]
         del LAST_INSPIRATION[user.id]
+    phrase = phrase[0].upper() + phrase[1:]
     video_message = bot.copy_message(MANAGER_CHAT_ID, chat_id, message_id)
     i = len(PROPOSED)
     PROPOSED.append(Proposed(user, phrase, video_message.message_id, message_id, phrase_idx))
