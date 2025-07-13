@@ -73,6 +73,11 @@ bot = telebot.TeleBot(
 )
 telebot.logger.setLevel(telebot.logging.INFO)
 
+try:
+    MANAGERS = bot.get_chat_administrators(MANAGER_CHAT_ID)
+except:
+    MANAGERS = [bot.get_chat_member(MANAGER_CHAT_ID, OWNER_ID)]
+
 @bot.message_handler(commands=["start", "help"], chat_types=["private", "group", "supergroup"])
 def help(message: t.Message):
     response = ""
@@ -121,15 +126,6 @@ def inspiration(message: t.Message):
 
 def mention(user: t.User): return f"@{user.username}" if user.username else f"<code>{user.id}</code>"
 
-def is_manager(user_id: int):
-    try:
-        bot.get_chat_member(MANAGER_CHAT_ID, user_id)
-        return True
-    except ApiTelegramException as e:
-        if "member not found" in e.description:
-            return False
-        raise
-
 @bot.message_handler(commands=["ask_for_help"], func=lambda message: message.chat.id == MANAGER_CHAT_ID)
 def ask_for_help(message: t.Message):
     text = message.text
@@ -140,7 +136,7 @@ def ask_for_help(message: t.Message):
     if arg < 1: raise UserError("Укажите натуральное число")
     user_lasts = [
         (user_id, data["last"]) for user_id, data in USER_DATA.items()
-        if not (data["accepted"] or data.get("no_reminders") or data.get("reminded") or (is_manager(user_id) and not DEBUG))
+        if not (data["accepted"] or data.get("no_reminders") or data.get("reminded") or (user_id in MANAGERS and not DEBUG))
     ]
     user_lasts = sorted(user_lasts, key=lambda t: t[1])
     prompt = (
