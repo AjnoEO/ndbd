@@ -250,6 +250,7 @@ def propose_manage(i: int):
 
 PROPOSED_ACTIONS_TO_PROMPTS = {
     "accept": "{user} <strong>принимает</strong> предложение. Вы уверены?",
+    "confirm": "{user} <strong>принимает</strong> предложение",
     "edit": "{user} <strong>редактирует</strong> предложение. Введите исправленный вариант",
     "decline": "{user} <strong>отклоняет</strong> предложение. Укажите причину отказа"
 }
@@ -280,8 +281,8 @@ def handle_proposed(callback_query: t.CallbackQuery):
         return
     if action == "confirm":
         accept_proposed(CURRENT_PROPOSED["idx"])
-        reply_params = t.ReplyParameters(CURRENT_PROPOSED["prompt_msg_id"])
-        bot.send_message(message.chat.id, "Предложение принято", reply_parameters=reply_params)
+        user = message.text[:message.entities[0].offset-1]
+        bot.edit_message_text(PROPOSED_ACTIONS_TO_PROMPTS["confirm"].format(user=user), message.chat.id, message.message_id)
         return
     buttons = {"Подтвердить": {"callback_data": f"proposed_{i}_confirm"}, "Отмена": {"callback_data": f"proposed_{i}_cancel"}}
     if action != "accept":
