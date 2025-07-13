@@ -21,7 +21,7 @@ OWNER_HANDLE = __data["owner_handle"]
 MANAGER_CHAT_ID = int(__data["manager_chat_id"])
 CHANNEL_ID = int(__data["channel_id"])
 
-USER_DATA: dict[int, dict[str, User|int|list[int]]] = {} # [User] obj, last [post idx], [accepted proposed] count
+USER_DATA: dict[int, dict[str, User|int|list[int]|bool]] = {} # obj, last, accepted, no_reminders, reminded
 __user_data_path = "user_data.json"
 if __user_data_path in os.listdir():
     with open(__user_data_path, encoding="utf8") as f:

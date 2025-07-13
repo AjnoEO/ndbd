@@ -3,13 +3,13 @@ import schedule
 from copy import deepcopy
 import os
 import random
-from requests.exceptions import RequestException
 import threading
 import time
 import pandas as pd
 import numpy as np
 import telebot
 import telebot.types as t
+from telebot.apihelper import ApiTelegramException
 from telebot.formatting import escape_html
 from telebot.util import quick_markup, extract_command
 from classes import Proposed
@@ -120,6 +120,74 @@ def inspiration(message: t.Message):
     bot.send_message(message.chat.id, response)
 
 def mention(user: t.User): return f"@{user.username}" if user.username else f"<code>{user.id}</code>"
+
+def is_manager(user_id: int):
+    try:
+        bot.get_chat_member(MANAGER_CHAT_ID, user_id)
+        return True
+    except ApiTelegramException as e:
+        if "member not found" in e.description:
+            return False
+        raise
+
+@bot.message_handler(commands=["ask_for_help"], func=lambda message: message.chat.id == MANAGER_CHAT_ID)
+def ask_for_help(message: t.Message):
+    text = message.text
+    if " " in text and (arg := text[text.find(" ")+1:]).isnumeric():
+        arg = int(arg)
+    else:
+        arg = 5
+    if arg < 1: raise UserError("Укажите натуральное число")
+    user_lasts = [
+        (user_id, data["last"]) for user_id, data in USER_DATA.items()
+        if not (data["accepted"] or data.get("no_reminders") or data.get("reminded") or (is_manager(user_id) and not DEBUG))
+    ]
+    user_lasts = sorted(user_lasts, key=lambda t: t[1])
+    prompt = (
+        "Здравствуйте, {user}! У нас заканчиваются посты для канала, нам нужна помощь. "
+        "Пожалуйста, если есть возможность, запишите одно или несколько новых видео в канал.\n"
+        "Полезные команды:\n- /tips\n- /inspiration\nСпасибо!"
+    )
+    button = {"Отключить напоминания": {"callback_data": "reminders_off"}}
+    count = 0
+    response = ""
+    exception = None
+    for user_id, _ in user_lasts:
+        user = USER_DATA[user_id]["obj"]
+        try:
+            bot.send_message(user_id, prompt.format(user=user.first_name), reply_markup=quick_markup(button))
+        except ApiTelegramException as e:
+            if e.error_code == 403:
+                del USER_DATA[user_id]
+                update_user_data()
+                continue
+            if exception is None: exception = e
+        count += 1
+        USER_DATA[user_id]["reminded"] = True
+        update_user_data()
+        response += f"\n- {user.full_name} ({mention(user)})"
+        if count == arg: break
+    if count == 0:
+        raise UserError("Не удалось найти пользователей, которых можно призвать записать новое видео")
+    response = f"Просьба записать новое видео отправлена {count} пользовател{gram_number(count, 'ю', 'ям')}:" + response
+    bot.send_message(MANAGER_CHAT_ID, response)
+    if exception: raise exception
+
+@bot.callback_query_handler(func=lambda query: query.data.startswith("reminders_"))
+def handle_reminders(query: t.CallbackQuery):
+    turn_on = query.data.endswith("_on")
+    user = query.from_user
+    USER_DATA[user.id]["no_reminders"] = not turn_on
+    update_user_data()
+    if turn_on:
+        response = "Напоминания включены"
+        button = {"Отключить": {"callback_data": "reminders_off"}}
+    else:
+        response = "Напоминания отключены. Если захотите снова получать напоминания, нажмите на кнопку ниже"
+        button = {"Включить": {"callback_data": "reminders_on"}}
+    bot.edit_message_reply_markup(query.message.chat.id, query.message.message_id, reply_markup=None)
+    bot.send_message(query.message.chat.id, response, reply_markup=quick_markup(button))
+    bot.answer_callback_query(query.id)
 
 @bot.message_handler(
     commands=["update_history", "force_update_history"],
@@ -376,7 +444,8 @@ def propose(phrase: str, user: t.User):
     i = len(PROPOSED)
     PROPOSED.append(Proposed(user, phrase, video_message.message_id, message_id, phrase_idx))
     update_proposed()
-    USER_DATA.setdefault(user.id, {"obj": user, "last": -1, "accepted": []})
+    USER_DATA.setdefault(user.id, {"obj": user, "last": 0, "accepted": []})
+    USER_DATA[user.id]["reminded"] = False
     update_user_data()
     propose_manage(i)
     bot.send_message(chat_id, f"Ваше предложение отправлено на проверку. Спасибо!")
@@ -414,7 +483,10 @@ def handle_other_types(message: t.Message):
 def job():
     next_user = next_to_post()
     if next_user is None:
-        response = "<strong>Предложенные посты закончились!</strong> Не могу запостить новое видео"
+        response = (
+            "<strong>Предложенные посты закончились!</strong> Не могу запостить новое видео\n"
+            "Можно запросить новые видео у пользователей командой /ask_for_help"
+        )
         bot.send_message(MANAGER_CHAT_ID, response)
     else:
         post_proposed(USER_DATA[next_user]["accepted"][0])
