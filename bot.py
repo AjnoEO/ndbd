@@ -430,7 +430,8 @@ def waitlist(message: t.Message):
         response += f"\nи ещё {totals_copy['accepted']}…"
     bot.send_message(message.chat.id, response)
 
-@bot.message_handler(commands=["revoke_proposed", "revoke"], func=lambda message: message.chat.id == MANAGER_CHAT_ID)
+@bot.message_handler(commands=["revoke_proposed", "revoke", "force_revoke", "force_revoke_proposed"],
+                     func=lambda message: message.chat.id == MANAGER_CHAT_ID)
 def revoke_proposed(message: t.Message):
     command = extract_command(message.text)
     i = message.text.split(maxsplit=1)[-1]
@@ -438,7 +439,9 @@ def revoke_proposed(message: t.Message):
     i = int(i)
     proposed = PROPOSED[i]
     try: USER_DATA[proposed.user_id]["accepted"].remove(i)
-    except ValueError: raise UserError(f"Предложение <code>{i}</code> не найдено в очереди принятых предложений")
+    except ValueError: 
+        if not command.startswith("force_"):
+            raise UserError(f"Предложение <code>{i}</code> не найдено в очереди принятых предложений")
     update_user_data()
     propose_manage(i)
 
