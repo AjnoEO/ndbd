@@ -5,7 +5,7 @@ from telebot import TeleBot
 
 class Proposed:
     def __init__(self, user: t.User, phrase: str, msg_id: int, orig_msg_id: int, phrase_idx: int | None = None):
-        if isinstance(user, str): user = t.User.de_json(user)
+        if isinstance(user, (str, dict)): user = t.User.de_json(user)
         if isinstance(user, t.User):
             self.user_id = user.id
             self._user = user

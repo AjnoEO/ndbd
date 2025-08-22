@@ -416,7 +416,7 @@ def waitlist(message: t.Message):
     response = f"Публикации ожида{gram_number(t, 'ет', 'ют')} {t} предложени{gram_number(t, 'е', 'я', 'й')}:"
     user_data_copy = deepcopy(USER_DATA)
     totals_copy = TOTALS.copy()
-    for i in range(10):
+    for _ in range(10):
         if totals_copy["accepted"] == 0: break
         next_user = next_to_post(user_data_copy, totals_copy)
         totals_copy["posted"] += 1
@@ -429,6 +429,18 @@ def waitlist(message: t.Message):
     else:
         response += f"\nи ещё {totals_copy['accepted']}…"
     bot.send_message(message.chat.id, response)
+
+@bot.message_handler(commands=["revoke_proposed", "revoke"], func=lambda message: message.chat.id == MANAGER_CHAT_ID)
+def revoke_proposed(message: t.Message):
+    command = extract_command(message.text)
+    i = message.text.split(maxsplit=1)[-1]
+    if not i.isnumeric(): raise UserError(f"Формат команды: <code>/{command} &lt;ID&gt;</code>")
+    i = int(i)
+    proposed = PROPOSED[i]
+    try: USER_DATA[proposed.user_id]["accepted"].remove(i)
+    except ValueError: raise UserError(f"Предложение <code>{i}</code> не найдено в очереди принятых предложений")
+    update_user_data()
+    propose_manage(i)
 
 def propose(phrase: str, user: t.User):
     chat_id, message_id = SENT_VIDEOS.pop(user.id)
