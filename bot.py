@@ -209,7 +209,7 @@ def update_history(message: t.Message):
     bot.send_message(message.chat.id, prompt)
 
 @bot.message_handler(
-    regexp="^\d+ -?\d+$", 
+    regexp=r"^\d+ -?\d+$", 
     func=lambda message: message.chat.id == MANAGER_CHAT_ID and USER_DATA.get("updating")
 )
 def load_user(message: t.Message):
@@ -271,18 +271,27 @@ def handle_proposed(callback_query: t.CallbackQuery):
     _, i, action = callback_query.data.split("_")
     i = int(i)
     message = callback_query.message
-    bot.answer_callback_query(callback_query.id)
-    bot.edit_message_reply_markup(message.chat.id, message.message_id, reply_markup=None)
-    if not PROPOSED[i]: raise UserError("Это предложение уже обработано")
+    if not PROPOSED[i]:
+        bot.answer_callback_query(callback_query.id)
+        bot.edit_message_reply_markup(message.chat.id, message.message_id, reply_markup=None)
+        raise UserError("Это предложение уже обработано")
     if action == "cancel":
         CURRENT_PROPOSED.clear()
         bot.edit_message_text("Действие отменено", message.chat.id, message.message_id)
         propose_manage(i)
+        bot.answer_callback_query(callback_query.id)
         return
     if action == "confirm":
         accept_proposed(CURRENT_PROPOSED["idx"])
         user = message.text[:message.entities[0].offset-1]
         bot.edit_message_text(PROPOSED_ACTIONS_TO_PROMPTS["confirm"].format(user=user), message.chat.id, message.message_id)
+        bot.answer_callback_query(callback_query.id)
+        return
+    if CURRENT_PROPOSED and CURRENT_PROPOSED["idx"] != i:
+        curr_i: int = CURRENT_PROPOSED["idx"]
+        bot.answer_callback_query(
+            callback_query.id, f"Сначала завершите операцию с предложением «{PROPOSED[curr_i].phrase}»"
+        )
         return
     buttons = {"Подтвердить": {"callback_data": f"proposed_{i}_confirm"}, "Отмена": {"callback_data": f"proposed_{i}_cancel"}}
     if action != "accept":
@@ -296,6 +305,8 @@ def handle_proposed(callback_query: t.CallbackQuery):
     CURRENT_PROPOSED["idx"] = i
     CURRENT_PROPOSED["action"] = action
     CURRENT_PROPOSED["prompt_msg_id"] = prompt_msg.id
+    bot.answer_callback_query(callback_query.id)
+    bot.edit_message_reply_markup(message.chat.id, message.message_id, reply_markup=None)
 
 def end_proposed_prompt():
     prompt_msg_id = CURRENT_PROPOSED["prompt_msg_id"]
@@ -354,7 +365,7 @@ def video_sent(message: t.Message):
         return
     bot.send_message(message.chat.id, "Видео принято! Теперь напишите текстом, что вы продактилировали")
 
-@bot.message_handler(commands=["add"], regexp="^/add \d+ [А-Яа-яЁё -]+$", func=lambda message: message.chat.id == MANAGER_CHAT_ID)
+@bot.message_handler(commands=["add"], regexp=r"^/add \d+ [А-Яа-яЁё -]+$", func=lambda message: message.chat.id == MANAGER_CHAT_ID)
 def force_propose(message: t.Message):
     if not message.reply_to_message or message.reply_to_message.content_type not in ['video', 'video_note']:
         raise UserError("Команду /add необходимо использовать в ответ на видео")
