@@ -47,7 +47,7 @@ if __proposed_path in os.listdir():
     for p in PROPOSED:
         if not p: continue
         if p._user: continue
-        if p.user_id in USER_DATA: p._user = USER_DATA[p.user_id]
+        if p.user_id in USER_DATA: p._user = USER_DATA[p.user_id]["obj"]
 
 def update_proposed():
     with open(__proposed_path, encoding="utf8", mode="w") as f:
