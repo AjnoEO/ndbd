@@ -283,6 +283,7 @@ def handle_proposed(callback_query: t.CallbackQuery):
         return
     if action == "confirm":
         accept_proposed(CURRENT_PROPOSED["idx"])
+        CURRENT_PROPOSED.clear()
         user = message.text[:message.entities[0].offset-1]
         bot.edit_message_text(PROPOSED_ACTIONS_TO_PROMPTS["confirm"].format(user=user), message.chat.id, message.message_id)
         bot.answer_callback_query(callback_query.id)
